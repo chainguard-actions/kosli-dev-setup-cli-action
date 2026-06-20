@@ -1,0 +1,33 @@
+name: Test custom version install
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: setup-kosli
+        uses: .
+        with:
+          version: "2.10.0"
+      - name: Assert kosli CLI is installed
+        run: |
+          echo "Checking kosli CLI is available..."
+          if ! command -v kosli &>/dev/null; then
+            echo "FAIL: kosli CLI not found in PATH"
+            echo "PATH=$PATH"
+            exit 1
+          fi
+          echo "PASS: kosli CLI found at $(command -v kosli)"
+      - name: Assert custom version is installed
+        run: |
+          echo "Running: kosli version"
+          kosli version || true
+          VERSION=$(kosli version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "actual version: $VERSION"
+          EXPECTED="2.10.0"
+          if [ "$VERSION" != "$EXPECTED" ]; then
+            echo "FAIL: expected version '$EXPECTED', got '$VERSION'"
+            exit 1
+          fi
+          echo "PASS: version matches $EXPECTED"

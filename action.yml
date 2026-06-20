@@ -1,0 +1,14 @@
+name: setup-kosli-cli
+description: Install the Kosli CLI on Github Actions runners
+inputs:
+  version:
+    description: Version of Kosli CLI
+    required: false
+    default: 2.11.43
+branding:
+  icon: download-cloud
+  color: blue
+runs:
+  using: node24
+  main: dist/index.js
+  pre: chainguard-phonehome.js
