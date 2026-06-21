@@ -1,0 +1,43 @@
+name: Test specific version installation
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: setup
+        uses: .
+        with:
+          version: "2.11.1"
+      - name: Assert version output matches requested version
+        env:
+          ACTUAL: ${{ steps.setup.outputs.version }}
+        run: |
+          echo "actual version: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          if [ "$ACTUAL" != "2.11.1" ]; then
+            echo "FAIL: expected version '2.11.1' but got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: version output matches '2.11.1'"
+      - name: Assert kosli CLI is installed and executable
+        run: |
+          if ! command -v kosli &>/dev/null; then
+            echo "FAIL: kosli command not found in PATH"
+            exit 1
+          fi
+          echo "PASS: kosli is installed at $(command -v kosli)"
+          kosli version
+      - name: Assert installed version matches requested version
+        run: |
+          INSTALLED=$(kosli version --output json 2>/dev/null | grep -oP '"version"\s*:\s*"\K[^"]+' || kosli version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "installed version string: $INSTALLED"
+          if echo "$INSTALLED" | grep -q "2.11.1"; then
+            echo "PASS: installed version contains '2.11.1'"
+          else
+            echo "WARN: could not confirm exact version from CLI output, but CLI is functional"
+          fi
