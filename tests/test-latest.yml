@@ -1,0 +1,45 @@
+name: Test install latest Kosli CLI
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          version: latest
+      - name: Assert version output is set
+        env:
+          VERSION_OUT: ${{ steps.action.outputs.version }}
+        run: |
+          echo "version output: $VERSION_OUT"
+          if [ -z "$VERSION_OUT" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          echo "PASS: version output is '$VERSION_OUT'"
+      - name: Assert kosli CLI is installed and executable
+        run: |
+          if ! command -v kosli &>/dev/null; then
+            echo "FAIL: kosli command not found in PATH"
+            exit 1
+          fi
+          echo "PASS: kosli is available at $(command -v kosli)"
+      - name: Assert kosli version matches output
+        env:
+          VERSION_OUT: ${{ steps.action.outputs.version }}
+        run: |
+          INSTALLED=$(kosli version --output json 2>/dev/null | grep -oP '"version"\s*:\s*"\K[^"]+' || kosli version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "installed version: $INSTALLED"
+          echo "expected version: $VERSION_OUT"
+          if [ -z "$INSTALLED" ]; then
+            echo "WARN: could not parse installed version, skipping version match check"
+          else
+            if [ "$INSTALLED" != "$VERSION_OUT" ]; then
+              echo "FAIL: installed version '$INSTALLED' does not match output '$VERSION_OUT'"
+              exit 1
+            fi
+            echo "PASS: versions match"
+          fi

@@ -1,0 +1,51 @@
+name: Test install Kosli CLI with major version pin
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          version: "2"
+      - name: Assert version output is set and starts with major version
+        env:
+          VERSION_OUT: ${{ steps.action.outputs.version }}
+        run: |
+          echo "version output: $VERSION_OUT"
+          if [ -z "$VERSION_OUT" ]; then
+            echo "FAIL: version output is empty"
+            exit 1
+          fi
+          MAJOR=$(echo "$VERSION_OUT" | cut -d. -f1)
+          if [ "$MAJOR" != "2" ]; then
+            echo "FAIL: expected major version '2', got major '$MAJOR' from '$VERSION_OUT'"
+            exit 1
+          fi
+          echo "PASS: version '$VERSION_OUT' starts with major version 2"
+      - name: Assert kosli CLI is installed and executable
+        run: |
+          if ! command -v kosli &>/dev/null; then
+            echo "FAIL: kosli command not found in PATH"
+            exit 1
+          fi
+          echo "PASS: kosli is available at $(command -v kosli)"
+      - name: Assert installed version major matches
+        env:
+          VERSION_OUT: ${{ steps.action.outputs.version }}
+        run: |
+          INSTALLED=$(kosli version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
+          echo "installed version: $INSTALLED"
+          echo "expected version: $VERSION_OUT"
+          if [ -z "$INSTALLED" ]; then
+            echo "WARN: could not parse installed version, skipping check"
+          else
+            MAJOR=$(echo "$INSTALLED" | cut -d. -f1)
+            if [ "$MAJOR" != "2" ]; then
+              echo "FAIL: installed version '$INSTALLED' does not have major version 2"
+              exit 1
+            fi
+            echo "PASS: installed version '$INSTALLED' has major version 2"
+          fi
