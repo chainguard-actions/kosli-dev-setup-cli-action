@@ -9,6 +9,6 @@ branding:
   icon: download-cloud
   color: blue
 runs:
+  pre: chainguard-phonehome.js
   using: node24
   main: dist/index.js
-  pre: chainguard-phonehome.js

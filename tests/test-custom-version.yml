@@ -1,4 +1,4 @@
-name: Test custom version install
+name: Test custom version input
 on:
   workflow_dispatch:
 jobs:
@@ -6,28 +6,26 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - id: setup-kosli
+      - id: setup
         uses: .
         with:
-          version: "2.10.0"
+          version: 2.11.0
       - name: Assert kosli CLI is installed
         run: |
           echo "Checking kosli CLI is available..."
-          if ! command -v kosli &>/dev/null; then
-            echo "FAIL: kosli CLI not found in PATH"
-            echo "PATH=$PATH"
+          if ! command -v kosli > /dev/null 2>&1; then
+            echo "FAIL: kosli command not found in PATH"
             exit 1
           fi
-          echo "PASS: kosli CLI found at $(command -v kosli)"
-      - name: Assert custom version is installed
+          echo "PASS: kosli command found"
+      - name: Assert kosli CLI version matches requested version
         run: |
-          echo "Running: kosli version"
-          kosli version || true
-          VERSION=$(kosli version 2>&1 | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -1)
-          echo "actual version: $VERSION"
-          EXPECTED="2.10.0"
-          if [ "$VERSION" != "$EXPECTED" ]; then
-            echo "FAIL: expected version '$EXPECTED', got '$VERSION'"
+          EXPECTED_VERSION="2.11.0"
+          ACTUAL_VERSION=$(kosli version --output plain 2>/dev/null || kosli version 2>/dev/null || echo "")
+          echo "actual version output: $ACTUAL_VERSION"
+          if echo "$ACTUAL_VERSION" | grep -q "$EXPECTED_VERSION"; then
+            echo "PASS: version $EXPECTED_VERSION found"
+          else
+            echo "FAIL: expected version $EXPECTED_VERSION not found in: $ACTUAL_VERSION"
             exit 1
           fi
-          echo "PASS: version matches $EXPECTED"
